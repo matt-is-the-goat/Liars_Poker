@@ -52,8 +52,21 @@ def view_to_dict(view: TableView) -> dict:
     }
 
 
-def result_to_dict(result: RoundResult) -> dict:
+def result_to_dict(result: RoundResult, game=None) -> dict:
     pool = sorted(result.pool, key=lambda c: (c.is_joker, c.value))
+    hands: List[dict] = []
+    if game is not None:
+        for p in game.players:
+            if p.eliminated or not p.hand:
+                continue
+            is_you = getattr(p.agent, "is_human", False)
+            hands.append({
+                "index": p.index,
+                "name": "You" if is_you else p.name,
+                "is_you": is_you,
+                "is_loser": p.index == result.loser,
+                "cards": [card_to_dict(c) for c in p.hand],
+            })
     return {
         "existed": result.existed,
         "loser": result.loser,
@@ -61,4 +74,5 @@ def result_to_dict(result: RoundResult) -> dict:
         "bidder": result.bidder,
         "bid": bid_to_dict(result.bid),
         "pool": [card_to_dict(c) for c in pool],
+        "hands": hands,
     }

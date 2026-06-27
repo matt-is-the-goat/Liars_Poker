@@ -18,13 +18,18 @@ from .serialize import result_to_dict, view_to_dict
 class WebHumanAgent(Agent):
     is_human = True
 
-    def __init__(self, name: str, emit: Callable[[str, dict], None]):
+    def __init__(self, name: str, emit: Callable[[str, dict], None],
+                 sleep: Optional[Callable[[float], None]] = None):
         self.name = name
         self._emit = emit
+        # Pauses the game-loop thread so the browser can show the showdown flip.
+        self._sleep = sleep or (lambda _s: None)
         # Moves arrive here from the Socket.IO handler; act() blocks on get().
         self.inbox: "queue.Queue[Action]" = queue.Queue()
         # The view we last handed the player — used to validate their reply.
         self.pending_view: Optional[TableView] = None
+        # Set by the session so the showdown reveal can read everyone's hands.
+        self.game = None
 
     def act(self, view: TableView) -> Action:
         self.pending_view = view
@@ -44,4 +49,8 @@ class WebHumanAgent(Agent):
         self._emit("log", {"message": message})
 
     def on_round_result(self, result: RoundResult) -> None:
-        self._emit("round_result", result_to_dict(result))
+        # Called first thing in apply_result, so hands are still dealt — read them.
+        self._emit("round_result", result_to_dict(result, self.game))
+        # Hold the loop so the browser can play the showdown reveal before the
+        # next round's cards are dealt over the top of it.
+        self._sleep(2.6)

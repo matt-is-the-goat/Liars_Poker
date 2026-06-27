@@ -24,6 +24,7 @@ class Category(IntEnum):
     FULL_HOUSE = 6
     QUADS = 7
     STRAIGHT_FLUSH = 8
+    
 
 
 @dataclass(frozen=True)

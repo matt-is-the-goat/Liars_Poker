@@ -37,6 +37,8 @@ class GameSession:
     def __init__(self, human: WebHumanAgent, game: Game):
         self.human = human
         self.game = game
+        # Let the human bridge read everyone's hands at showdown time.
+        human.game = game
         self.running = True
 
     def run(self) -> None:
@@ -71,14 +73,23 @@ def on_start_game(payload):
     threshold = max(start_count + 1, min(12, int(payload.get("threshold", start_count + 3))))
     num_jokers = max(0, min(2, int(payload.get("num_jokers", 0))))
 
+    difficulty = str(payload.get("difficulty", "medium")).lower()
+    if difficulty not in DIFFICULTIES:
+        difficulty = "medium"
+    style = str(payload.get("personality", "mixed")).lower()
+
     rng = random.Random()
     names = pick_names(load_name_pool(), num_bots, rng)
-    human = WebHumanAgent("You", _emit)
+    human = WebHumanAgent("You", _emit, sleep=socketio.sleep)
     agents: List[Agent] = [human]
     pers_keys = list(PERSONALITIES.keys())
+    bot_meta = []
     for i in range(num_bots):
-        pers = pers_keys[i % len(pers_keys)]
-        agents.append(make_bot(names[i], pers, "medium", rng))
+        # "mixed" rotates through the personalities; a specific style applies to all.
+        pers = style if style in PERSONALITIES else pers_keys[i % len(pers_keys)]
+        agents.append(make_bot(names[i], pers, difficulty, rng))
+        bot_meta.append({"index": i + 1, "name": names[i],
+                         "personality": pers, "difficulty": difficulty})
 
     config = GameConfig(start_count=start_count,
                         elimination_threshold=threshold,
@@ -89,6 +100,7 @@ def on_start_game(payload):
     SESSION = GameSession(human, game)
     socketio.emit("game_started", {
         "opponents": names,
+        "bots": bot_meta,
         "config": {
             "start_count": start_count,
             "threshold": threshold,

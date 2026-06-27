@@ -4,49 +4,74 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Liar's Poker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Liar's&nbsp;Poker</h1>
-    <span class="tagline">Bluff about everyone's combined cards — or call BULLSHIT.</span>
-  </header>
+  <div id="bg"></div>
 
   <!-- ---- setup ---- -->
-  <section id="setup" class="panel">
-    <h2>New game</h2>
-    <div class="form-grid">
-      <label>Bots <input id="num_bots" type="number" min="1" max="7" value="3" /></label>
-      <label>Starting cards <input id="start_count" type="number" min="1" max="5" value="2" /></label>
-      <label>Knockout at <input id="threshold" type="number" min="2" max="12" value="5" /></label>
-      <label>Jokers <input id="num_jokers" type="number" min="0" max="2" value="0" /></label>
+  <section id="setup" class="overlay">
+    <div class="modal">
+      <h1 class="logo">LIAR'S&nbsp;POKER</h1>
+      <p class="sub">Bluff about everyone's combined cards — or call BULLSHIT.</p>
+      <div class="form-grid">
+        <label>Bots <input id="num_bots" type="number" min="1" max="7" value="3" /></label>
+        <label>Starting cards <input id="start_count" type="number" min="1" max="5" value="2" /></label>
+        <label>Knockout at <input id="threshold" type="number" min="2" max="12" value="5" /></label>
+        <label>Jokers <input id="num_jokers" type="number" min="0" max="2" value="0" /></label>
+        <label>Difficulty
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <label>Bot style
+          <select id="personality">
+            <option value="mixed" selected>Mixed table</option>
+            <option value="trusting">Trusting</option>
+            <option value="balanced">Balanced</option>
+            <option value="liar">Liars</option>
+          </select>
+        </label>
+      </div>
+      <button id="start_btn" class="btn btn-gold big">DEAL ME IN</button>
     </div>
-    <button id="start_btn" class="primary">Deal me in</button>
   </section>
 
   <!-- ---- game ---- -->
-  <section id="game" class="hidden">
-    <div class="table-row">
-      <div class="panel" id="players-panel">
-        <h2>Table</h2>
-        <ul id="players"></ul>
-        <div id="bid-banner" class="bid-banner">No bid yet</div>
-      </div>
-
-      <div class="panel" id="log-panel">
-        <h2>Round log</h2>
-        <pre id="log"></pre>
-      </div>
+  <main id="game" class="hidden">
+    <div class="topbar">
+      <span class="logo small">LIAR'S&nbsp;POKER</span>
+      <button id="log-toggle" class="btn btn-ghost">Log</button>
     </div>
 
-    <div class="panel" id="hand-panel">
-      <h2>Your hand</h2>
-      <div id="hand" class="hand"></div>
-    </div>
+    <section id="seats" class="seats"></section>
 
-    <div class="panel" id="action-panel">
+    <section class="center">
+      <div id="bid-banner" class="bid-banner">No bid yet</div>
+      <div id="showdown" class="showdown hidden">
+        <div id="showdown-verdict" class="showdown-verdict"></div>
+        <div class="showdown-pool-label">COMBINED POOL</div>
+        <div id="showdown-pool" class="fan small-fan"></div>
+      </div>
+    </section>
+
+    <section id="you" class="you-area">
       <div id="turn-status" class="turn-status">Waiting…</div>
+
+      <div class="hand-wrap">
+        <div class="hand-tools">
+          <button id="sort-rank" class="btn btn-ghost sm">Rank</button>
+          <button id="sort-suit" class="btn btn-ghost sm">Suit</button>
+        </div>
+        <div id="hand" class="fan"></div>
+      </div>
+
       <div id="controls" class="controls disabled">
         <div class="bid-builder">
           <label>Hand
@@ -72,18 +97,25 @@
               <option value="C">♣ Clubs</option>
             </select>
           </label>
-          <button id="bid_btn" class="primary">Make bid</button>
+          <button id="bid_btn" class="btn btn-blue">MAKE BID</button>
         </div>
-        <button id="challenge_btn" class="danger">Call BULLSHIT</button>
+        <button id="challenge_btn" class="btn btn-red">CALL BULLSHIT</button>
       </div>
       <div id="error" class="error hidden"></div>
-    </div>
+    </section>
 
-    <div id="gameover" class="panel hidden">
-      <h2 id="winner-text"></h2>
-      <button id="again_btn" class="primary">New game</button>
-    </div>
-  </section>
+    <aside id="log-panel" class="log-drawer hidden">
+      <h2>Round log</h2>
+      <pre id="log"></pre>
+    </aside>
+
+    <section id="gameover" class="overlay hidden">
+      <div class="modal">
+        <h1 id="winner-text" class="logo"></h1>
+        <button id="again_btn" class="btn btn-gold big">NEW GAME</button>
+      </div>
+    </section>
+  </main>
 
   <script src="/static/app.js"></script>
 </body>
