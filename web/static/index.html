@@ -58,6 +58,7 @@
         <div id="showdown-verdict" class="showdown-verdict"></div>
         <div class="showdown-pool-label">COMBINED POOL</div>
         <div id="showdown-pool" class="fan small-fan"></div>
+        <button id="next-btn" class="btn btn-gold">Next hand ▶</button>
       </div>
     </section>
 
@@ -84,7 +85,11 @@
               <option value="FLUSH">Flush</option>
               <option value="FULL_HOUSE">Full house</option>
               <option value="QUADS">Four of a kind</option>
+              <option value="MANSION">Mansion (four + three)</option>
               <option value="STRAIGHT_FLUSH">Straight flush</option>
+              <option value="QUINTS">Five of a kind</option>
+              <option value="SEXES">Six of a kind</option>
+              <option value="HOTEL">Hotel (five + four)</option>
             </select>
           </label>
           <label id="rank-field">Rank <select id="rank"></select></label>
@@ -105,7 +110,10 @@
     </section>
 
     <aside id="log-panel" class="log-drawer hidden">
-      <h2>Round log</h2>
+      <div class="log-head">
+        <h2>Round log</h2>
+        <button id="log-close" class="btn btn-ghost sm">✕ Close</button>
+      </div>
       <pre id="log"></pre>
     </aside>
 

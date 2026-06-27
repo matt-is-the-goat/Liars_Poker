@@ -110,6 +110,13 @@ def on_start_game(payload):
     socketio.start_background_task(SESSION.run)
 
 
+@socketio.on("continue_round")
+def on_continue_round():
+    sess = SESSION
+    if sess is not None:
+        sess.human.continue_box.put(True)
+
+
 @socketio.on("submit_action")
 def on_submit_action(payload):
     sess = SESSION

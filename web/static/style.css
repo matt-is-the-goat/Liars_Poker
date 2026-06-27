@@ -65,6 +65,7 @@ body {
 }
 .btn:hover { filter: brightness(1.06); }
 .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.btn:disabled { opacity: .5; cursor: default; transform: none; filter: none; }
 .btn.big { font-size: 18px; padding: 16px 30px; }
 .btn.sm { padding: 7px 14px; border-radius: 9px; font-size: 13px; }
 .btn-gold { background: linear-gradient(#f7d169, #e6b13e); }
@@ -169,14 +170,26 @@ input, select {
 .seat-bid {
   position: absolute;
   top: -14px;
-  background: var(--gold);
-  color: #2a2008;
-  font-weight: 800;
+  background: #2b3a44;
+  color: #c7d6cf;
+  font-weight: 700;
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 10px;
   white-space: nowrap;
   box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, .08);
+}
+.seat-bid.standing {
+  background: var(--gold);
+  color: #2a2008;
+  font-weight: 800;
+  border-color: transparent;
+  animation: bidpop .22s ease;
+}
+@keyframes bidpop {
+  from { transform: scale(.8); }
+  to { transform: scale(1); }
 }
 
 /* center */
@@ -284,14 +297,15 @@ input, select {
   z-index: 40;
   overflow: hidden;
 }
-.log-drawer h2 { font-size: 13px; letter-spacing: 1.5px; color: var(--muted); margin: 0 0 10px; }
+.log-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.log-drawer h2 { font-size: 13px; letter-spacing: 1.5px; color: var(--muted); margin: 0; }
 #log {
   margin: 0;
   font-family: "SF Mono", Menlo, monospace;
   font-size: 12.5px;
   line-height: 1.55;
   white-space: pre-wrap;
-  height: calc(100% - 30px);
+  height: calc(100% - 46px);
   overflow-y: auto;
 }
 .log-reveal { color: var(--gold); }

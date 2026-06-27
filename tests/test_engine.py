@@ -92,6 +92,36 @@ def test_full_house():
         Bid(Category.FULL_HOUSE, rank=8, rank2=14)), "trips rank dominates pair rank")
 
 
+def test_custom_hands():
+    # Five of a kind: four naturals + a joker.
+    five_aces = [C("A", "S"), C("A", "H"), C("A", "D"), C("A", "C"), JOKER]
+    check(bid_exists(Bid(Category.QUINTS, rank=14), five_aces),
+          "four aces + joker = five aces")
+    check(not bid_exists(Bid(Category.SEXES, rank=14), five_aces),
+          "not six aces with one joker")
+    check(bid_exists(Bid(Category.SEXES, rank=14), five_aces + [JOKER]),
+          "four aces + two jokers = six aces")
+
+    # Mansion: four of one rank + three of another (no jokers needed).
+    mansion = [C("K", "S"), C("K", "H"), C("K", "D"), C("K", "C"),
+               C("5", "S"), C("5", "H"), C("5", "D")]
+    check(bid_exists(Bid(Category.MANSION, rank=13, rank2=5), mansion),
+          "KKKK + 555 = mansion")
+    check(not bid_exists(Bid(Category.MANSION, rank=5, rank2=13), mansion),
+          "reversed (four 5s) does not exist")
+
+    # Hotel: five + four (the five needs a joker here).
+    hotel = [C("Q", "S"), C("Q", "H"), C("Q", "D"), C("Q", "C"), JOKER,
+             C("7", "S"), C("7", "H"), C("7", "D"), C("7", "C")]
+    check(bid_exists(Bid(Category.HOTEL, rank=12, rank2=7), hotel),
+          "five Qs (with joker) + four 7s = hotel")
+
+    # Two-rank ordering: secondary rank breaks the tie.
+    check(Bid(Category.MANSION, rank=13, rank2=10).beats(
+        Bid(Category.MANSION, rank=13, rank2=2)),
+        "mansion K/10 beats K/2")
+
+
 def test_hierarchy():
     order = [
         Bid(Category.HIGH_CARD, rank=14),
@@ -102,7 +132,11 @@ def test_hierarchy():
         Bid(Category.FLUSH, rank=14, suit="S"),
         Bid(Category.FULL_HOUSE, rank=2, rank2=3),
         Bid(Category.QUADS, rank=2),
+        Bid(Category.MANSION, rank=2, rank2=3),
         Bid(Category.STRAIGHT_FLUSH, rank=2, suit="S"),
+        Bid(Category.QUINTS, rank=2),
+        Bid(Category.SEXES, rank=2),
+        Bid(Category.HOTEL, rank=2, rank2=3),
     ]
     for i in range(len(order) - 1):
         check(order[i + 1].beats(order[i]),

@@ -70,12 +70,22 @@ def bid_exists(bid: Bid, cards: Iterable[Card]) -> bool:
         return s.of_rank(bid.rank) + j >= 3
     if cat == Category.QUADS:
         return s.of_rank(bid.rank) + j >= 4
+    if cat == Category.QUINTS:
+        return s.of_rank(bid.rank) + j >= 5
+    if cat == Category.SEXES:
+        return s.of_rank(bid.rank) + j >= 6
 
     if cat == Category.TWO_PAIR:
         need = max(0, 2 - s.of_rank(bid.rank)) + max(0, 2 - s.of_rank(bid.rank2))
         return need <= j
     if cat == Category.FULL_HOUSE:
         need = max(0, 3 - s.of_rank(bid.rank)) + max(0, 2 - s.of_rank(bid.rank2))
+        return need <= j
+    if cat == Category.MANSION:
+        need = max(0, 4 - s.of_rank(bid.rank)) + max(0, 3 - s.of_rank(bid.rank2))
+        return need <= j
+    if cat == Category.HOTEL:
+        need = max(0, 5 - s.of_rank(bid.rank)) + max(0, 4 - s.of_rank(bid.rank2))
         return need <= j
 
     if cat == Category.STRAIGHT:

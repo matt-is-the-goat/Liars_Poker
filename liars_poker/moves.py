@@ -19,6 +19,8 @@ def all_bids() -> List[Bid]:
         bids.append(Bid(Category.PAIR, rank=r))
         bids.append(Bid(Category.TRIPS, rank=r))
         bids.append(Bid(Category.QUADS, rank=r))
+        bids.append(Bid(Category.QUINTS, rank=r))
+        bids.append(Bid(Category.SEXES, rank=r))
         bids.append(Bid(Category.STRAIGHT, rank=r))
         for suit in SUIT_KEYS:
             bids.append(Bid(Category.STRAIGHT_FLUSH, rank=r, suit=suit))
@@ -30,6 +32,14 @@ def all_bids() -> List[Bid]:
         for p in _RANKS:
             if t != p:
                 bids.append(Bid(Category.FULL_HOUSE, rank=t, rank2=p))
+    for t in _RANKS:
+        for p in _RANKS:
+            if t != p:
+                bids.append(Bid(Category.MANSION, rank=t, rank2=p))
+    for t in _RANKS:
+        for p in _RANKS:
+            if t != p:
+                bids.append(Bid(Category.HOTEL, rank=t, rank2=p))
     for high in _FLUSH_HIGHS:
         for suit in SUIT_KEYS:
             bids.append(Bid(Category.FLUSH, rank=high, suit=suit))

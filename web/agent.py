@@ -26,6 +26,8 @@ class WebHumanAgent(Agent):
         self._sleep = sleep or (lambda _s: None)
         # Moves arrive here from the Socket.IO handler; act() blocks on get().
         self.inbox: "queue.Queue[Action]" = queue.Queue()
+        # The browser drops a token here when the player clicks "Next hand".
+        self.continue_box: "queue.Queue[bool]" = queue.Queue()
         # The view we last handed the player — used to validate their reply.
         self.pending_view: Optional[TableView] = None
         # Set by the session so the showdown reveal can read everyone's hands.
@@ -47,10 +49,47 @@ class WebHumanAgent(Agent):
 
     def on_event(self, message: str) -> None:
         self._emit("log", {"message": message})
+        bid = self._parse_bid(message)
+        if bid is not None:
+            # Push a structured per-bid update so each seat shows its latest call
+            # live as the round is played.
+            self._emit("bid_made", bid)
+            if not bid["is_you"]:
+                # Pause after each opponent's bid so the player can read it.
+                self._sleep(1.0)
+
+    def _parse_bid(self, message: str) -> Optional[dict]:
+        """Pull (player, bid text) out of a '<name> bids: <bid>' broadcast."""
+        for sep, is_you in ((" bids: ", False), (" bid: ", True)):
+            if sep in message:
+                name, _, text = message.partition(sep)
+                return {"index": self._index_for(name, is_you),
+                        "name": name, "text": text, "is_you": is_you}
+        return None
+
+    def _index_for(self, name: str, is_you: bool) -> Optional[int]:
+        if self.game is None:
+            return None
+        for p in self.game.players:
+            human = getattr(p.agent, "is_human", False)
+            if is_you and human:
+                return p.index
+            if not is_you and not human and p.name == name:
+                return p.index
+        return None
+
+    def _is_eliminated(self) -> bool:
+        if self.game is None:
+            return False
+        return any(p.agent is self and p.eliminated for p in self.game.players)
 
     def on_round_result(self, result: RoundResult) -> None:
         # Called first thing in apply_result, so hands are still dealt — read them.
         self._emit("round_result", result_to_dict(result, self.game))
-        # Hold the loop so the browser can play the showdown reveal before the
-        # next round's cards are dealt over the top of it.
-        self._sleep(2.6)
+        if self._is_eliminated():
+            # Already out — just spectating; auto-advance so they're not forced
+            # to click through bot-only rounds.
+            self._sleep(2.0)
+        else:
+            # Hold the game-loop thread until the player clicks "Next hand".
+            self.continue_box.get()

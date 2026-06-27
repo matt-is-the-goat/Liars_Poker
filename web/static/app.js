@@ -19,7 +19,11 @@ const CATEGORY_FIELDS = {
   FLUSH: { rank: "High card", suit: true, minRank: 6 },
   FULL_HOUSE: { rank: "Three of", rank2: "Pair of" },
   QUADS: { rank: "Rank" },
+  MANSION: { rank: "Four of", rank2: "Three of" },
   STRAIGHT_FLUSH: { rank: "A rank it contains", suit: true },
+  QUINTS: { rank: "Rank" },
+  SEXES: { rank: "Rank" },
+  HOTEL: { rank: "Five of", rank2: "Four of" },
 };
 
 let myTurn = false;
@@ -27,6 +31,9 @@ let myHand = [];
 let sortMode = "rank";
 let botMeta = {};       // index -> {personality, difficulty}
 let latestView = null;
+let lastCanChallenge = false;
+let roundBids = {};      // index -> latest bid text this round
+let activeBidder = null; // index of the standing (current) bid
 
 /* ---------- card rendering ---------- */
 function makeCardEl(c) {
@@ -93,7 +100,7 @@ function renderSeats(view, revealByIndex) {
     seat.className = "seat";
     const reveal = revealByIndex && revealByIndex[p.index];
     if (p.eliminated) seat.classList.add("eliminated");
-    if (!reveal && p.index === view.current_bidder) seat.classList.add("active");
+    if (!reveal && p.index === activeBidder) seat.classList.add("active");
     if (reveal && reveal.is_loser) seat.classList.add("loser");
 
     const emoji = PERSONA_EMOJI[meta.personality] || "🤖";
@@ -114,32 +121,38 @@ function renderSeats(view, revealByIndex) {
       `<div class="seat-badge">${p.eliminated ? "out" : badge}</div>`;
     seat.appendChild(stack);
 
-    if (!reveal && p.index === view.current_bidder && view.current_bid) {
+    if (!reveal && roundBids[p.index]) {
       const bubble = document.createElement("div");
-      bubble.className = "seat-bid";
-      bubble.textContent = view.current_bid.text;
+      bubble.className = "seat-bid" + (p.index === activeBidder ? " standing" : "");
+      bubble.textContent = roundBids[p.index];
       seat.appendChild(bubble);
     }
     wrap.appendChild(seat);
   }
 }
 
-function renderBanner(view) {
+function renderBanner() {
   const banner = $("bid-banner");
-  if (view.current_bid) {
-    const who = view.players[view.current_bidder];
-    banner.innerHTML = `${view.current_bid.text} ` +
-      `<span class="who">— ${who.is_you ? "you" : who.name}</span>`;
+  if (activeBidder != null && roundBids[activeBidder] && latestView) {
+    const who = latestView.players[activeBidder];
+    banner.innerHTML = `${roundBids[activeBidder]} ` +
+      `<span class="who">— ${who && who.is_you ? "you" : (who ? who.name : "")}</span>`;
   } else {
     banner.textContent = "No bid yet — you open";
   }
 }
 
+function resetRound() {
+  roundBids = {};
+  activeBidder = null;
+}
+
 function renderTable(view) {
   latestView = view;
   myHand = view.my_hand;
+  activeBidder = view.current_bidder;
   renderSeats(view, null);
-  renderBanner(view);
+  renderBanner();
   renderHand();
 }
 
@@ -157,8 +170,17 @@ function renderShowdown(data) {
     ` — ${loserName} loses`;
   renderFan($("showdown-pool"), data.pool);
 
+  // Show the Next button only while we're still in the game; once eliminated the
+  // server auto-advances bot-only rounds for us.
+  const stillIn = data.hands.some((h) => h.is_you);
+  const nextBtn = $("next-btn");
+  nextBtn.classList.toggle("hidden", !stillIn);
+  nextBtn.disabled = false;
+  nextBtn.textContent = "Next hand ▶";
+
   $("bid-banner").classList.add("hidden");
   $("showdown").classList.remove("hidden");
+  resetRound();  // clear bid bubbles for the next round
 }
 
 function hideShowdown() {
@@ -227,6 +249,7 @@ refreshBidFields();
 socket.on("game_started", (data) => {
   botMeta = {};
   for (const b of data.bots || []) botMeta[b.index] = b;
+  resetRound();
   $("setup").classList.add("hidden");
   $("game").classList.remove("hidden");
   $("gameover").classList.add("hidden");
@@ -237,19 +260,35 @@ socket.on("game_started", (data) => {
 
 socket.on("state", (data) => {
   hideShowdown();
+  resetRound();  // new round — clear last round's bid bubbles
   renderTable(data.view);
+});
+
+socket.on("bid_made", (data) => {
+  if (data.index == null) return;
+  roundBids[data.index] = data.text;
+  activeBidder = data.index;
+  if (latestView) {
+    renderSeats(latestView, null);
+    renderBanner();
+  }
 });
 
 socket.on("your_turn", (data) => {
   hideShowdown();
   renderTable(data.view);
   $("error").classList.add("hidden");
+  lastCanChallenge = data.can_challenge;
   setControlsEnabled(true, data.can_challenge);
 });
 
 socket.on("log", (data) => log(data.message));
 socket.on("round_result", (data) => renderShowdown(data));
-socket.on("error", (data) => showError(data.message));
+socket.on("error", (data) => {
+  // The move was rejected, so it's still our turn — re-enable the controls.
+  showError(data.message);
+  setControlsEnabled(true, lastCanChallenge);
+});
 
 socket.on("game_over", (data) => {
   setControlsEnabled(false, false);
@@ -280,6 +319,16 @@ $("sort-suit").addEventListener("click", () => { sortMode = "suit"; renderHand()
 
 $("log-toggle").addEventListener("click", () => {
   $("log-panel").classList.toggle("hidden");
+});
+$("log-close").addEventListener("click", () => {
+  $("log-panel").classList.add("hidden");
+});
+
+$("next-btn").addEventListener("click", () => {
+  const btn = $("next-btn");
+  btn.disabled = true;
+  btn.textContent = "Dealing…";
+  socket.emit("continue_round");
 });
 
 $("bid_btn").addEventListener("click", () => {

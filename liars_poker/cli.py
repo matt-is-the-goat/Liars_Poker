@@ -93,7 +93,11 @@ _CATEGORY_MENU = [
     ("6", Category.FLUSH, "Flush"),
     ("7", Category.FULL_HOUSE, "Full house"),
     ("8", Category.QUADS, "Four of a kind"),
-    ("9", Category.STRAIGHT_FLUSH, "Straight flush"),
+    ("9", Category.MANSION, "Four of a kind + three of a kind"),
+    ("10", Category.STRAIGHT_FLUSH, "Straight flush"),
+    ("11", Category.QUINTS, "Five of a kind"),
+    ("12", Category.SEXES, "Six of a kind"),
+    ("13", Category.HOTEL, "Five of a kind + four of a kind"),
 ]
 
 
@@ -164,7 +168,8 @@ class HumanAgent(Agent):
         if cat is None:
             return None
 
-        if cat in (Category.HIGH_CARD, Category.PAIR, Category.TRIPS, Category.QUADS):
+        if cat in (Category.HIGH_CARD, Category.PAIR, Category.TRIPS,
+                   Category.QUADS, Category.QUINTS, Category.SEXES):
             r = _ask_rank("  Rank: ")
             return None if r is None else Bid(cat, rank=r)
 
@@ -185,6 +190,22 @@ class HumanAgent(Agent):
                 print("  Full house needs two different ranks.")
                 return None
             return Bid(Category.FULL_HOUSE, rank=t, rank2=p)
+
+        if cat == Category.MANSION:
+            t = _ask_rank("  Four-of-a-kind rank: ")
+            p = _ask_rank("  Three-of-a-kind rank: ")
+            if t is None or p is None or t == p:
+                print("  Mansion needs two different ranks.")
+                return None
+            return Bid(Category.MANSION, rank=t, rank2=p)
+
+        if cat == Category.HOTEL:
+            t = _ask_rank("  Five-of-a-kind rank: ")
+            p = _ask_rank("  Four-of-a-kind rank: ")
+            if t is None or p is None or t == p:
+                print("  Hotel needs two different ranks.")
+                return None
+            return Bid(Category.HOTEL, rank=t, rank2=p)
 
         if cat == Category.STRAIGHT:
             r = _ask_rank("  A rank the straight contains: ")

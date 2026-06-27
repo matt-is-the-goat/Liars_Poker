@@ -23,8 +23,13 @@ class Category(IntEnum):
     FLUSH = 5
     FULL_HOUSE = 6
     QUADS = 7
-    STRAIGHT_FLUSH = 8
-    
+    MANSION = 8
+    STRAIGHT_FLUSH = 9
+    QUINTS = 10
+    SEXES = 11
+    HOTEL = 12
+
+
 
 
 @dataclass(frozen=True)
@@ -50,9 +55,9 @@ class Bid:
     def sort_key(self) -> Tuple:
         """Total-ordering key. Higher key = stronger bid."""
         c = int(self.category)
-        if self.category == Category.TWO_PAIR:
-            return (c, self.rank, self.rank2)
-        if self.category == Category.FULL_HOUSE:
+        if self.category in (Category.TWO_PAIR, Category.FULL_HOUSE,
+                             Category.MANSION, Category.HOTEL):
+            # Two-rank hands: compare primary rank first, then secondary.
             return (c, self.rank, self.rank2)
         if self.category == Category.FLUSH:
             # Lower called rank is harder to make, so it is stronger.
@@ -84,8 +89,16 @@ class Bid:
             return f"full house, {r}s over {r2}s"
         if self.category == Category.QUADS:
             return f"four {r}s"
+        if self.category == Category.MANSION:
+            return f"mansion, four {r}s over three {r2}s"
         if self.category == Category.STRAIGHT_FLUSH:
             return f"{s} straight flush containing a {r}"
+        if self.category == Category.QUINTS:
+            return f"five {r}s"
+        if self.category == Category.SEXES:
+            return f"six {r}s"
+        if self.category == Category.HOTEL:
+            return f"hotel, five {r}s over four {r2}s"
         return "?"
 
     def __str__(self) -> str:
