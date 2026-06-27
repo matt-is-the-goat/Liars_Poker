@@ -117,6 +117,7 @@ class Game:
             for i, a in enumerate(agents)
         ]
         self.starter = 0  # index of who opens the next round
+        self.round_num = 0
         self.observers: List[Agent] = list(agents)
 
     # ---- helpers -------------------------------------------------------
@@ -174,6 +175,11 @@ class Game:
         if self.starter in order:
             s = order.index(self.starter)
             order = order[s:] + order[:s]
+
+        self.round_num += 1
+        self._broadcast(f"\n──────────  ROUND {self.round_num}  ──────────")
+        snm, s_human = self._ref(order[0])
+        self._broadcast(f"{snm} {'open' if s_human else 'opens'} the round.")
 
         for p in active:
             self.players[p.index].agent.on_round_start(
@@ -233,6 +239,16 @@ class Game:
         self._broadcast(
             f"The hand {'existed' if result.existed else 'did NOT exist'}. "
             f"{nm} {loses} the round and {gets} a card (now {loser.card_count})."
+        )
+        self._broadcast("All hands:")
+        for p in self.players:
+            if not p.eliminated and p.hand:
+                pnm, _ = self._ref(p.index)
+                hand_str = "  ".join(str(c) for c in p.hand)
+                self._broadcast(f"  {pnm}: {hand_str}")
+        pool_sorted = sorted(result.pool, key=lambda c: (c.is_joker, c.value))
+        self._broadcast(
+            "Combined pool:  " + "  ".join(str(c) for c in pool_sorted)
         )
         if loser.card_count >= self.config.elimination_threshold:
             loser.eliminated = True
