@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liar's Poker</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Liar's&nbsp;Poker</h1>
+    <span class="tagline">Bluff about everyone's combined cards — or call BULLSHIT.</span>
+  </header>
+
+  <!-- ---- setup ---- -->
+  <section id="setup" class="panel">
+    <h2>New game</h2>
+    <div class="form-grid">
+      <label>Bots <input id="num_bots" type="number" min="1" max="7" value="3" /></label>
+      <label>Starting cards <input id="start_count" type="number" min="1" max="5" value="2" /></label>
+      <label>Knockout at <input id="threshold" type="number" min="2" max="12" value="5" /></label>
+      <label>Jokers <input id="num_jokers" type="number" min="0" max="2" value="0" /></label>
+    </div>
+    <button id="start_btn" class="primary">Deal me in</button>
+  </section>
+
+  <!-- ---- game ---- -->
+  <section id="game" class="hidden">
+    <div class="table-row">
+      <div class="panel" id="players-panel">
+        <h2>Table</h2>
+        <ul id="players"></ul>
+        <div id="bid-banner" class="bid-banner">No bid yet</div>
+      </div>
+
+      <div class="panel" id="log-panel">
+        <h2>Round log</h2>
+        <pre id="log"></pre>
+      </div>
+    </div>
+
+    <div class="panel" id="hand-panel">
+      <h2>Your hand</h2>
+      <div id="hand" class="hand"></div>
+    </div>
+
+    <div class="panel" id="action-panel">
+      <div id="turn-status" class="turn-status">Waiting…</div>
+      <div id="controls" class="controls disabled">
+        <div class="bid-builder">
+          <label>Hand
+            <select id="category">
+              <option value="HIGH_CARD">High card</option>
+              <option value="PAIR">Pair</option>
+              <option value="TWO_PAIR">Two pair</option>
+              <option value="TRIPS">Three of a kind</option>
+              <option value="STRAIGHT">Straight</option>
+              <option value="FLUSH">Flush</option>
+              <option value="FULL_HOUSE">Full house</option>
+              <option value="QUADS">Four of a kind</option>
+              <option value="STRAIGHT_FLUSH">Straight flush</option>
+            </select>
+          </label>
+          <label id="rank-field">Rank <select id="rank"></select></label>
+          <label id="rank2-field" class="hidden">Second <select id="rank2"></select></label>
+          <label id="suit-field" class="hidden">Suit
+            <select id="suit">
+              <option value="S">♠ Spades</option>
+              <option value="H">♥ Hearts</option>
+              <option value="D">♦ Diamonds</option>
+              <option value="C">♣ Clubs</option>
+            </select>
+          </label>
+          <button id="bid_btn" class="primary">Make bid</button>
+        </div>
+        <button id="challenge_btn" class="danger">Call BULLSHIT</button>
+      </div>
+      <div id="error" class="error hidden"></div>
+    </div>
+
+    <div id="gameover" class="panel hidden">
+      <h2 id="winner-text"></h2>
+      <button id="again_btn" class="primary">New game</button>
+    </div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
