@@ -1,0 +1,10 @@
+# Bot name pool. One name per line.
+# Lines starting with '#' and blank lines are ignored.
+# Edit this list freely — the game picks random names from here for the bots.
+Matt
+Jess
+Hannah
+Lewis
+Eman
+Kun Er
+Harry

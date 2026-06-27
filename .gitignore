@@ -1,0 +1,17 @@
+# Claude
+.claude/
+CLAUDE.md
+PROJECT_MEMORY.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+*.log
+
+# OS
+.DS_Store
