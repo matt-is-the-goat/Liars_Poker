@@ -99,6 +99,11 @@ _TRUST_PRIOR = 0.7
 _TRUST_PRIOR_WEIGHT = 2.0
 
 
+def _new_trust_record() -> List[int]:
+    # Module-level (not a lambda) so BotAgent stays picklable for SubprocVecEnv.
+    return [0, 0]
+
+
 class BotAgent(Agent):
     def __init__(self, name: str, personality: Personality,
                  difficulty: Difficulty, rng: Optional[random.Random] = None,
@@ -115,7 +120,7 @@ class BotAgent(Agent):
         # claims there just gets you bluffed. See the A/B notes in PROJECT_MEMORY.
         self.use_signals_for_challenge = False
         # Per-opponent honesty record: index -> [true_bids, resolved_bids].
-        self._trust_stats = defaultdict(lambda: [0, 0])
+        self._trust_stats = defaultdict(_new_trust_record)
 
     # ---- learning from revealed rounds ---------------------------------
     def on_round_result(self, result: RoundResult) -> None:

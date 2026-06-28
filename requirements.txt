@@ -1,0 +1,16 @@
+# Liar's Poker — install into a venv:  python -m venv .venv && .venv/bin/pip install -r requirements.txt
+# Core game has no third-party deps; these are for the web app and the RL bot.
+
+# Web app
+flask==3.1.3
+flask-socketio==5.6.1
+
+# RL (Phase 3): MaskablePPO self-play
+torch==2.2.2
+gymnasium==1.0.0
+stable-baselines3==2.4.1
+sb3-contrib==2.4.0
+numpy==1.26.4
+
+# Tests
+pytest
