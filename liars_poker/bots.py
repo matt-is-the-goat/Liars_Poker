@@ -1,7 +1,7 @@
 """Bot agents.
 
 Belief model: a bot knows its own cards, the total number of cards in play, and
-how many jokers are in the deck — but not what anyone else holds. It estimates
+how many jokers are in the deck, but not what anyone else holds. It estimates
 P(a bid exists in the full pool) by Monte Carlo: repeatedly deal the unknown
 cards from the remaining deck, combine with its own hand, and check the bid.
 
@@ -12,14 +12,14 @@ Opponent modelling (toggleable):
     sampling). Each opponent has a ``trust`` score that adapts over the game:
     players whose challenged bids turn out false become less trusted, so their
     claims sway the bot less. With ``signal_strength == 0`` the bot ignores all
-    bids and samples uniformly (the old behaviour) — useful as an A/B baseline.
+    bids and samples uniformly (the old behaviour), which is handy as an A/B baseline.
 
 Two axes shape behaviour:
   * difficulty  -> estimate quality (sample count + noise) and default signal use
   * personality -> thresholds for challenging and for how far to bid (bluffing)
 
 "How far to bid beyond what your own cards support" is the crux of the game and
-is governed by ``bid_floor`` below — the lowest believed probability a bot will
+is governed by ``bid_floor`` below, the lowest believed probability a bot will
 still claim. Lower floor = bigger bluffs.
 """
 
@@ -116,7 +116,7 @@ class BotAgent(Agent):
         self.signal_strength = (difficulty.signal_strength
                                 if signal_strength is None else signal_strength)
         # Opponents' claims inform which raises WE make (their bids hint at what
-        # exists), but we stay skeptical when deciding to challenge — trusting
+        # exists), but we stay skeptical when deciding to challenge, since trusting
         # claims there just gets you bluffed. See the A/B notes in PROJECT_MEMORY.
         self.use_signals_for_challenge = False
         # Per-opponent honesty record: index -> [true_bids, resolved_bids].
@@ -202,7 +202,7 @@ class BotAgent(Agent):
         history = view.round_history
         # When judging the standing bid for a challenge, don't let that very bid
         # vouch for itself. By default we also ignore other claims here and judge
-        # the bid on raw odds — staying a tough challenger (see PROJECT_MEMORY).
+        # the bid on raw odds, staying a tough challenger (see PROJECT_MEMORY).
         challenge_signals = history[:-1] if self.use_signals_for_challenge else ()
         p_current = self.estimate(view.current_bid, view, unknown, challenge_signals)
 
@@ -216,7 +216,7 @@ class BotAgent(Agent):
         if chosen is not None:
             return Action.make_bid(chosen)
 
-        # No bid clears the safety floor — bluff or fold to a challenge.
+        # Nothing clears the safety floor, so either bluff or fold to a challenge.
         if raises and self.rng.random() < pers.forced_bluff:
             return Action.make_bid(self._bluff_bid(raises))
         if p_current < max(pers.challenge_threshold * 2.0, 0.5):
@@ -239,7 +239,7 @@ class BotAgent(Agent):
         return [raises[i] for i in sorted(i for i in idxs if i < n)]
 
     def _hand_candidates(self, view: TableView) -> List[Bid]:
-        """Bids the bot's own cards directly support — the hands it can most
+        """Bids the bot's own cards directly support, the hands it can most
         confidently claim, so it leverages the cards it holds (and a bigger hand
         means more of these)."""
         ranks = Counter(c.value for c in view.my_hand if not c.is_joker)

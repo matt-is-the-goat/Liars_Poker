@@ -24,7 +24,7 @@ from liars_poker.bots import make_bot
 from liars_poker.moves import legal_raises
 
 # Compact, RELATIVE action space. Slot 0 = challenge; slots 1..K = "raise to the
-# j-th representative legal bid" — the cheapest few raises (fine control) then a
+# j-th representative legal bid": the cheapest few raises (fine control) then a
 # spread across the rest by strength (for jumps/bluffs). Crucially this makes
 # challenge ~1-of-(K+1) instead of 1-of-725, so the policy actually explores it.
 K_NEAR = 14      # the cheapest legal raises, one slot each
@@ -79,6 +79,8 @@ class LiarsPokerEnv(gym.Env):
         jokers_range=(2, 2),
         start_range=(1, 3),
         threshold_range=(6, 6),
+        policy_controller=None,
+        heuristic_mix: float = 0.2,
     ):
         super().__init__()
         assert 2 <= num_players <= MAX_PLAYERS
@@ -96,6 +98,12 @@ class LiarsPokerEnv(gym.Env):
         self.jokers_range = jokers_range
         self.start_range = start_range
         self.threshold_range = threshold_range
+        # Self-play: a SelfPlayController holding frozen policy snapshots. When
+        # ready, each opponent seat is (1 - heuristic_mix) likely to be a snapshot.
+        self.policy_controller = policy_controller
+        self.heuristic_mix = heuristic_mix
+        self.opp_is_policy: dict = {}
+        self.opp_snap: dict = {}
         self.max_rounds = max_rounds
         self.r_loss = reward_round_loss
         self.r_opp_elim = reward_opp_eliminated
@@ -128,6 +136,16 @@ class LiarsPokerEnv(gym.Env):
             s: self.make_opponent(s, self._py_rng)
             for s in range(self.n) if s != self.agent_seat
         }
+        # Decide which opponent seats are self-play snapshots this game.
+        self.opp_is_policy, self.opp_snap = {}, {}
+        pc_ready = self.policy_controller is not None and self.policy_controller.ready()
+        for s in range(self.n):
+            if s == self.agent_seat:
+                continue
+            use_policy = pc_ready and self._py_rng.random() > self.heuristic_mix
+            self.opp_is_policy[s] = use_policy
+            if use_policy:
+                self.opp_snap[s] = self.policy_controller.pick(self._py_rng)
         self.starter = self._py_rng.randrange(self.n)
         self.round_num = 0
         self._game_over = False
@@ -141,7 +159,7 @@ class LiarsPokerEnv(gym.Env):
     def step(self, action: int):
         self._pending_reward = 0.0
         if not self._game_over:
-            self._apply_agent_action(int(action))
+            self._apply_compact_action(self.agent_seat, int(action))
             if not self._game_over:
                 self._advance()
 
@@ -224,24 +242,35 @@ class LiarsPokerEnv(gym.Env):
             seat = self._current_seat()
             if seat == self.agent_seat:
                 return
-            action = self.opponents[seat].act(self._view_for(seat))
-            if action.kind == "challenge" and self.current_bid is not None:
-                self._resolve_round(challenger=seat)
-            elif action.kind == "challenge":
-                self.turn_ptr += 1  # defensive: illegal opening challenge -> skip
+            if self.opp_is_policy.get(seat, False):
+                # Self-play opponent: a frozen policy snapshot, driven through the
+                # same compact action space as the learning agent.
+                obs = self._encode_obs(seat)
+                mask = self.action_masks()
+                a = self.policy_controller.act(self.opp_snap[seat], obs, mask)
+                self._apply_compact_action(seat, a)
             else:
-                self._apply_bid(seat, action.bid)
+                action = self.opponents[seat].act(self._view_for(seat))
+                if action.kind == "challenge" and self.current_bid is not None:
+                    self._resolve_round(challenger=seat)
+                elif action.kind == "challenge":
+                    self.turn_ptr += 1  # defensive: illegal opening challenge
+                else:
+                    self._apply_bid(seat, action.bid)
 
-    def _apply_agent_action(self, action: int) -> None:
+    def _apply_compact_action(self, seat: int, action: int) -> None:
         if action == CHALLENGE:
             if self.current_bid is not None:
-                self._resolve_round(challenger=self.agent_seat)
+                self._resolve_round(challenger=seat)
+            else:
+                self.turn_ptr += 1  # defensive: masked away, shouldn't occur
             return
         slots = self._raise_slots()
         bid = slots[action - 1] if 1 <= action <= NUM_RAISE_SLOTS else None
         if bid is not None:
-            self._apply_bid(self.agent_seat, bid)
-        # bid is None only if the action was masked-out; ignore defensively.
+            self._apply_bid(seat, bid)
+        else:
+            self.turn_ptr += 1  # defensive: masked-out slot
 
     def _apply_bid(self, seat: int, bid: Bid) -> None:
         self.current_bid = bid

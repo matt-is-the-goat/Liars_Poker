@@ -1,4 +1,4 @@
-/* Liar's Poker — Balatro-style browser client. */
+/* Liar's Poker, Balatro-style browser client. */
 const socket = io();
 const $ = (id) => document.getElementById(id);
 
@@ -136,9 +136,9 @@ function renderBanner() {
   if (activeBidder != null && roundBids[activeBidder] && latestView) {
     const who = latestView.players[activeBidder];
     banner.innerHTML = `${roundBids[activeBidder]} ` +
-      `<span class="who">— ${who && who.is_you ? "you" : (who ? who.name : "")}</span>`;
+      `<span class="who">by ${who && who.is_you ? "you" : (who ? who.name : "")}</span>`;
   } else {
-    banner.textContent = "No bid yet — you open";
+    banner.textContent = "No bid yet, you open";
   }
 }
 
@@ -167,7 +167,7 @@ function renderShowdown(data) {
   $("showdown-verdict").innerHTML =
     `<strong>${data.bid.text}</strong> ` +
     (data.existed ? `<span class="ok">existed ✓</span>` : `<span class="no">did NOT exist ✗</span>`) +
-    ` — ${loserName} loses`;
+    `, ${loserName} loses`;
   renderFan($("showdown-pool"), data.pool);
 
   // Show the Next button only while we're still in the game; once eliminated the
@@ -211,7 +211,7 @@ function setControlsEnabled(on, canChallenge) {
   $("controls").classList.toggle("disabled", !on);
   $("challenge_btn").classList.toggle("hidden", !canChallenge);
   $("turn-status").textContent = on
-    ? "Your move — make a bid or call bullshit."
+    ? "Your move. Make a bid or call bullshit."
     : "Waiting for other players…";
 }
 
@@ -260,7 +260,7 @@ socket.on("game_started", (data) => {
 
 socket.on("state", (data) => {
   hideShowdown();
-  resetRound();  // new round — clear last round's bid bubbles
+  resetRound();  // new round, clear last round's bid bubbles
   renderTable(data.view);
 });
 
@@ -285,7 +285,7 @@ socket.on("your_turn", (data) => {
 socket.on("log", (data) => log(data.message));
 socket.on("round_result", (data) => renderShowdown(data));
 socket.on("error", (data) => {
-  // The move was rejected, so it's still our turn — re-enable the controls.
+  // The move was rejected, so it's still our turn, so re-enable the controls.
   showError(data.message);
   setControlsEnabled(true, lastCanChallenge);
 });

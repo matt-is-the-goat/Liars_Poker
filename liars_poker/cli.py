@@ -45,7 +45,7 @@ def _prompt(msg: str) -> str:
     try:
         return input(msg).strip()
     except EOFError:
-        raise SystemExit("\nInput closed — exiting.")
+        raise SystemExit("\nInput closed, exiting.")
 
 
 def _ask_int(msg: str, lo: int, hi: int, default: Optional[int] = None) -> int:
@@ -134,7 +134,7 @@ class HumanAgent(Agent):
             print(f" CURRENT BID   {view.current_bid}")
             print(f"               (called by {bidder})")
         else:
-            print(" CURRENT BID   none — you open the round")
+            print(" CURRENT BID   none, you open the round")
         extras = f"{view.total_cards_in_play} cards in play"
         if view.num_jokers:
             extras += f" · {view.num_jokers} joker(s) in deck"
@@ -237,7 +237,7 @@ def setup_game(rng: random.Random) -> Game:
     print("           LIAR'S POKER")
     print("=" * 60)
     print("Make escalating poker-hand claims about everyone's combined")
-    print("cards — or call BULLSHIT. Last player standing wins.\n")
+    print("cards, or call BULLSHIT. Last player standing wins.\n")
 
     num_bots = _ask_int("Number of bots", 1, 7, default=3)
     start_count = _ask_int("Starting cards per player", 1, 5, default=2)

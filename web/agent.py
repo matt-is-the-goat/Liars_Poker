@@ -28,7 +28,7 @@ class WebHumanAgent(Agent):
         self.inbox: "queue.Queue[Action]" = queue.Queue()
         # The browser drops a token here when the player clicks "Next hand".
         self.continue_box: "queue.Queue[bool]" = queue.Queue()
-        # The view we last handed the player — used to validate their reply.
+        # The view we last handed the player, used to validate their reply.
         self.pending_view: Optional[TableView] = None
         # Set by the session so the showdown reveal can read everyone's hands.
         self.game = None
@@ -84,10 +84,10 @@ class WebHumanAgent(Agent):
         return any(p.agent is self and p.eliminated for p in self.game.players)
 
     def on_round_result(self, result: RoundResult) -> None:
-        # Called first thing in apply_result, so hands are still dealt — read them.
+        # Called first thing in apply_result, so hands are still dealt; read them now.
         self._emit("round_result", result_to_dict(result, self.game))
         if self._is_eliminated():
-            # Already out — just spectating; auto-advance so they're not forced
+            # Already out and just spectating, so auto-advance so they're not forced
             # to click through bot-only rounds.
             self._sleep(2.0)
         else:

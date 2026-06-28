@@ -1,1 +1,1 @@
-"""Liar's Poker — a custom bluffing card game engine."""
+"""Liar's Poker, a custom bluffing card game engine."""

@@ -154,7 +154,7 @@ def on_submit_action(payload):
 
 def main() -> None:
     port = int(os.environ.get("PORT", "5000"))
-    print(f"Liar's Poker web — open http://localhost:{port}")
+    print(f"Liar's Poker web running at http://localhost:{port}")
     socketio.run(app, host="0.0.0.0", port=port,
                  debug=False, allow_unsafe_werkzeug=True)
 

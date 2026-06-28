@@ -43,7 +43,7 @@ START_RANGE = (1, 3)
 THRESHOLD_RANGE = (6, 6)
 
 
-def make_env(difficulties: List[str], seed: int):
+def make_env(difficulties: List[str], seed: int, controller=None, heuristic_mix=0.2):
     def _init():
         env = LiarsPokerEnv(
             randomize=True,
@@ -52,6 +52,8 @@ def make_env(difficulties: List[str], seed: int):
             start_range=START_RANGE,
             threshold_range=THRESHOLD_RANGE,
             make_opponent=RandomOpponentFactory(difficulties),
+            policy_controller=controller,
+            heuristic_mix=heuristic_mix,
         )
         env.reset(seed=seed)
         return env
@@ -120,6 +122,11 @@ def main():
                    help="comma list the opponents sample from")
     p.add_argument("--checkpoint-freq", type=int, default=200_000)
     p.add_argument("--eval-freq", type=int, default=100_000)
+    p.add_argument("--self-play", action="store_true",
+                   help="opponents are frozen policy snapshots (fast; targets ideal play)")
+    p.add_argument("--snapshot-freq", type=int, default=100_000)
+    p.add_argument("--heuristic-mix", type=float, default=0.2,
+                   help="fraction of opponent seats kept as heuristic bots (grounding)")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
 
@@ -129,9 +136,20 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
 
-    venv = build_vec_env(args.n_envs, difficulties, args.subproc, args.seed)
-    print(f"Training MaskablePPO | envs={args.n_envs} | players 2-5, 2 jokers, "
-          f"threshold 6, start 1-3 (randomized) | opponents={difficulties} "
+    controller = None
+    if args.self_play:
+        from liars_poker.rl.selfplay import SelfPlayController
+        controller = SelfPlayController(max_snapshots=6)
+        # Self-play shares one controller across envs -> single process.
+        fns = [make_env(difficulties, args.seed + i, controller, args.heuristic_mix)
+               for i in range(args.n_envs)]
+        venv = DummyVecEnv(fns)
+        mode = f"SELF-PLAY (heuristic_mix={args.heuristic_mix})"
+    else:
+        venv = build_vec_env(args.n_envs, difficulties, args.subproc, args.seed)
+        mode = f"vs heuristics ({'subproc' if args.subproc else 'dummy'})"
+    print(f"Training MaskablePPO [{mode}] | envs={args.n_envs} | players 2-5, 2 jokers, "
+          f"threshold 6, start 1-3 | eval-opponents={difficulties} "
           f"| target={args.timesteps:,} steps", flush=True)
 
     model = MaskablePPO(
@@ -148,6 +166,10 @@ def main():
                            save_path=CKPT_DIR, name_prefix="ppo"),
         EvalWinRateCallback(args.eval_freq, difficulties),
     ]
+    if controller is not None:
+        from liars_poker.rl.selfplay import SnapshotCallback
+        controller.update(model.policy)  # seed pool so self-play starts immediately
+        callbacks.append(SnapshotCallback(controller, args.snapshot_freq))
     try:
         model.learn(total_timesteps=args.timesteps, callback=callbacks, progress_bar=False)
     finally:
